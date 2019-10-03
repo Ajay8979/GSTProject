@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
+			http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+			http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd
+			http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-4.2.xsd">
+
+	<!-- SPRING SETUP -->
+
+	<!-- Load properties so we can easily change them -->
+	<context:property-placeholder
+		location="classpath:application.properties" />
+
+	<!-- Enable Annotation Configuration in order to automatically scan controllers -->
+	<context:annotation-config />
+
+
+	<!-- Allow @Transactional annotations for transaction management -->
+	<tx:annotation-driven
+		transaction-manager="transactionManager" />
+
+	<!-- Search for Rest Resources and configure them automatically -->
+	<context:component-scan
+		base-package="com.ojas.gst.*" />
+
+	<!-- DATABASE SETUP -->
+
+	<bean id="dataSource"
+		class="org.apache.commons.dbcp2.BasicDataSource"
+		destroy-method="close">
+		<property name="username" value="${db.username}" />
+		<property name="password" value="${db.password}" />
+		<property name="driverClassName" value="${db.driver}" />
+		<property name="url" value="${db.url}" />
+	</bean>
+
+	<bean id="entityManagerFactory"
+		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="persistenceUnitName" value="examplePU" />
+		<property name="jpaVendorAdapter">
+			<bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+				<property name="generateDdl" value="true" />
+				<property name="showSql" value="true" />
+			</bean>
+		</property>
+		<property name="jpaProperties">
+			<props>
+				<!-- <prop key="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</prop> --> 
+                <prop key="hibernate.dialect">org.hibernate.dialect.MySQL5Dialect</prop>
+			</props>
+		</property>
+	</bean>
+
+
+	<bean id="mailSender"
+		class="org.springframework.mail.javamail.JavaMailSenderImpl">
+		<property name="host" value="${mail.host}" />
+		<property name="port" value="${mail.port}" />
+		<property name="username" value="${mail.username}" />
+		<property name="password" value="${mail.password}" />
+		<property name="javaMailProperties">
+			<props>
+				<prop key="mail.smtp.ssl.trust">${mail.host}</prop>
+				<prop key="mail.smtp.starttls.enable">${mail.starttls.enable}</prop>
+				<prop key="mail.smtp.auth">${mail.auth}</prop>
+			</props>
+		</property>
+	</bean>
+
+
+	<bean id="emailTemplate"
+		class="org.springframework.mail.SimpleMailMessage">
+		<property name="from" value="${mail.username}" />
+		<property name="subject" value="${mail.subject}" />
+		<property name="text">
+			<value>
+		<![CDATA[
+                   <!--  Hi %s,
+
+                    Thank You for registering for GST.
+
+                    Regards,
+                    %s. -->
+		]]>
+			</value>
+		</property>
+	</bean>
+
+
+	<bean id="transactionManager"
+		class="org.springframework.orm.jpa.JpaTransactionManager">
+		<property name="entityManagerFactory"
+			ref="entityManagerFactory" />
+	</bean>
+
+
+	<!-- Dao's -->
+	<bean id="userDao" class="com.ojas.gst.dao.JpaUserDao" />
+	<bean id="accessTokenDao"
+		class="com.ojas.gst.dao.JpaAccessTokenDao" />
+	<bean id="fileGSTR3BDataDao"
+		class="com.ojas.gst.dao.JpaFileGSTR3BData" />
+	<bean id="com.ojas.gst.daoImpl" class="com.ojas.gst.dao.GSTR1DaoImpl" />
+	<bean id="taxPayersTypeDao"
+		class="com.ojas.gst.dao.JpaTaxPayersTypeDao" />
+	<bean id="districtDao" class="com.ojas.gst.dao.JpaDistrictDao" />
+	<bean id="stateDao" class="com.ojas.gst.dao.JpaStateDao" />
+
+
+
+	<!-- Services -->
+
+	<bean id="userService"
+		class="com.ojas.gst.serviceimpl.DaoUserService">
+		<constructor-arg ref="userDao" />
+		<constructor-arg ref="accessTokenDao" />
+	</bean>
+
+	<bean id="fileGSTR3Service"
+		class="com.ojas.gst.serviceimpl.FileGSTR3BDataServiceImpl" />
+	<bean id="serviceImpl"
+		class="com.ojas.gst.service.GSTR1ServiceImpl" />
+	<bean id="taxPayersTypeService"
+		class="com.ojas.gst.serviceimpl.TaxPayersTypeServiceImpl" />
+	<bean id="stateService"
+		class="com.ojas.gst.serviceimpl.StateServiceImpl" />
+	<bean id="districtService"
+		class="com.ojas.gst.serviceimpl.DistrictServiceImpl" />
+
+
+	<!-- =================================================================================================================== -->
+
+	<!-- customer Registration configuration -->
+	<bean id="customerRegistrationDao" class="com.ojas.gst.dao.CustomerRegistrationDaoImpl" />
+	<bean id="registrationService" class="com.ojas.gst.serviceimpl.CustomerRegistrationServiceImpl" />
+
+
+	<bean id="cutomerTaxPayerDao" class="com.ojas.gst.dao.CustomerTaxPayerDaoImpl" />
+	<bean id="customerTaxPayerService" class="com.ojas.gst.serviceimpl.CustomerTaxPayerServiceImpl" />
+
+
+	<bean id="customerPersonalDao" class="com.ojas.gst.dao.CustomerPersonalInfoDaoImpl" />
+	<bean id="customerPersonalInfoService" class="com.ojas.gst.serviceimpl.CustomerPersonalInfoServiceImpl" />
+
+
+
+	<bean id="customerPlaceOfBusinessDao" class="com.ojas.gst.dao.CustomerPlaceOfBusinessDaoImpl" />
+	<!-- <bean id="customerPlaceOfBusinessService" class="com.ojas.gst.serviceimpl.CustomerPlaceOfBusinessServiceImpl" /> -->
+    <bean  id="customerPlaceOfBusinessService" class="com.ojas.gst.serviceimpl.CustomerPlaceOfBusinessServiceImpl"/>
+
+
+<bean id="customerBusinessDetailDao" class="com.ojas.gst.dao.CustomerBusinessDetailsDaoImpl"/>
+<bean id="customerBusinessDetailsService" class="com.ojas.gst.serviceimpl.CustomerBusinessDetailServiceImpl"/>
+
+
+
+
+	<bean id="customerBankAccountDetailsDao" class="com.ojas.gst.dao.CustomerBankAccountDetailsDaoImpl" />
+	<bean id="customerBankAccountDetailsService" class="com.ojas.gst.serviceimpl.CustomerBankAccountDetailsServiceImpl" />
+
+
+<bean id="customeStateSpecificInfoDao" class="com.ojas.gst.dao.CustomeStateSpecificInfoDaoImpl"/>
+<bean id="customeStateSpecificInfoService" class="com.ojas.gst.serviceimpl.CustomeStateSpecificInfoServiceImpl"/>
+
+
+
+<bean id="CustomerAdditionalPlaceOfBusinessDao"    class="com.ojas.gst.dao.CustomerAdditionalPlaceOfBusinessDaoImpl"/>
+<bean id="customerAdditionalPlaceOfBusinessService" class="com.ojas.gst.serviceimpl.CustomerAdditionalPlaceOfBusinessServiceImpl"/>
+
+
+
+<bean id="customerAdditionalPlaceOfBusiness1Dao"    class="com.ojas.gst.dao.CustomerAdditionalPlaceOfBusiness1DaoImpl"/>
+<bean id="customerAdditionalPlaceOfBusiness1Service"   class="com.ojas.gst.serviceimpl.CustomerAdditionalPlaceOfBusiness1ServiceImpl"/>
+
+
+
+<bean id="customerDetailsOfGoodsDao"    class="com.ojas.gst.dao.CustomerDetailsOfGoodsDaoImpl"/>
+<bean id="CustomerDetailsOfGoods"   class="com.ojas.gst.serviceimpl.CustomerDetailsOfGoodsServiceImpl"/>
+
+
+<bean id="customerAuthorizedRepresentativeDao"    class="com.ojas.gst.dao.CustomerAuthorizedRepresentativeDaoImpl"/>
+<bean id="authorizedService"   class="com.ojas.gst.serviceimpl.CustomerAuthorizedRepresentativeServiceImpl"/>
+
+<bean id="customerPersonalInformationDao"    class="com.ojas.gst.dao.CustomerPersonalInformationDaoImpl"/>
+<bean id="customerPersonalInformationService"   class="com.ojas.gst.serviceimpl.CustomerPersonalInformationServiceImpl"/>
+
+
+<bean id="customrPlaceDao"    class="com.ojas.gst.dao.CustomerPlaceDaoImpl"/>
+<bean id="customerPlaceService"   class="com.ojas.gst.serviceimpl.CustomerPlaceServiceImpl"/>
+
+
+
+<bean id="documentDao"    class="com.ojas.gst.dao.CustomerDocumentDaoImpl"/>
+
+<!-- 
+<bean id="emailDao"    class="com.ojas.gst.dao.EmailDaoImpl"/>
+<bean id="emailService"   class="com.ojas.gst.serviceimpl.EmailServiceImpl"/>
+
+ -->
+
+
+<bean id="customerTRNDao"    class="com.ojas.gst.dao.CustomerTRNDaoImpl"/>
+<bean id="customerTRNService"   class="com.ojas.gst.serviceimpl.CustomerTRNServiceImpl"/>
+
+ 
+
+
+
+	<!-- =================================================================================================================== -->
+	
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+    <!-- one of the properties available; the maximum file size in bytes -->  
+     <property name="maxUploadSize" value="40000000" />  
+</bean>
+
+	
+	<!-- =================================================================================================================== -->
+	
+	
+	
+
+	<bean id="messageSource"
+		class="org.springframework.context.support.ResourceBundleMessageSource">
+		<property name="basename">
+			<value>messages</value>
+		</property>
+	</bean>
+
+	<bean id="dataBaseInitializer"
+		class="com.ojas.gst.dao.DataBaseInitializer"
+		init-method="initDataBase">
+		<constructor-arg ref="userDao" />
+		<constructor-arg ref="passwordEncoder" />
+	</bean>
+
+
+	<!-- INIT REST COMPONENTS -->
+
+	<bean id="objectMapper"
+		class="com.fasterxml.jackson.databind.ObjectMapper" />
+
+	<!-- SPRING SECURITY SETUP -->
+
+	<bean id="passwordEncoder"
+		class="org.springframework.security.crypto.password.StandardPasswordEncoder">
+		<constructor-arg value="${app.secret}" />
+	</bean>
+
+	<!-- Enabling User Authentication Setup -->
+
+	<security:authentication-manager
+		id="authenticationManager">
+		<security:authentication-provider
+			user-service-ref="userService">
+
+			<security:password-encoder
+				ref="passwordEncoder" />
+		</security:authentication-provider>
+	</security:authentication-manager>
+
+	<security:http entry-point-ref="unauthorizedEntryPoint"
+		authentication-manager-ref="authenticationManager"
+		create-session="stateless">
+		<security:csrf disabled="true" />
+		<security:custom-filter
+			ref="authenticationTokenProcessingFilter" position="PRE_AUTH_FILTER" />
+		<security:intercept-url
+			pattern="/rest/user/authenticate" access="permitAll" />
+		<security:intercept-url method="GET"
+			pattern="/rest/blogposts/**" access="hasRole('USER')" />
+
+	</security:http>
+
+	<bean id="unauthorizedEntryPoint"
+		class="com.ojas.gst.rest.UnauthorizedEntryPoint" />
+
+	<bean id="authenticationTokenProcessingFilter"
+		class="com.ojas.gst.rest.AuthenticationTokenProcessingFilter">
+		<constructor-arg ref="userService" />
+	</bean>
+
+
+</beans>
